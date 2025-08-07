@@ -16,12 +16,8 @@
       <q-spinner size="md" color="primary" />
     </div>
 
-    <div v-else-if="jobsStore.error" class="text-negative">
-      {{ jobsStore.error }}
-    </div>
-
-    <div v-else-if="jobsStore.jobs.length === 0" class="text-grey">
-      No recommended jobs found.
+    <div v-else-if="jobsStore.message !== ''" class="text-grey">
+      {{ jobsStore.message }}
     </div>
 
     <div class="q-gutter-md">

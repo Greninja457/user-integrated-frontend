@@ -36,7 +36,7 @@ export const useUserStore = defineStore("user", {
 
     skills: [],
 
-    companyName: null,
+    company: null,
   }),
 
   actions: {
@@ -104,7 +104,7 @@ export const useUserStore = defineStore("user", {
         this.token = responseJson.token;
 
         if (this.role == "recruiter") {
-          this.companyName = responseJson.user?.company.companyName;
+          this.company = responseJson.user?.company;
         } else {
           this.gender = responseJson.user?.gender;
           this.dob = responseJson.user?.dob.split("T")[0];
@@ -282,7 +282,7 @@ export const useUserStore = defineStore("user", {
               this.skills.push([skillid, skillName.name]);
             }
           } else {
-            this.companyName = res.user?.company;
+            this.company = res.user?.company;
           }
 
           return {

@@ -4,13 +4,14 @@ export const useJobsStore = defineStore("jobs", {
   state: () => ({
     jobs: [],
     loading: false,
-    error: null,
+    message: "",
   }),
 
   actions: {
     async fetchRecommendedJobs() {
       this.loading = true;
-      this.error = null;
+      this.message = "";
+      this.jobs = [];
 
       try {
         const token = useUserStore().token;
@@ -23,13 +24,17 @@ export const useJobsStore = defineStore("jobs", {
         });
 
         if (!response.ok) {
-          throw new Error("Failed to fetch recommended jobs");
+          this.message = "Add some skills to your profile";
         }
 
         const data = await response.json();
-        this.jobs = data.jobs;
+        this.jobs = data.jobs || [];
+
+        if (this.jobs.length == 0) {
+          this.message = "No recommended jobs found.";
+        }
       } catch (err) {
-        this.error = err.message;
+        this.message = err.message;
         console.error("Job fetch error:", err);
       } finally {
         this.loading = false;

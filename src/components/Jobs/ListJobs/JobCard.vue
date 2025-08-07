@@ -77,23 +77,6 @@
         </div>
       </q-card>
     </div>
-
-    <!-- Footer Options -->
-    <div class="row items-center justify-end q-mt-sm q-gutter-md">
-      <div
-        class="report-hide-item row items-center cursor-pointer text-grey-7 text-caption"
-      >
-        <q-icon name="flag" size="16px" class="q-mr-xs" />
-        <span>Report</span>
-      </div>
-      <div
-        class="report-hide-item row items-center cursor-pointer text-grey-7 text-caption"
-      >
-        <q-icon name="block" size="16px" class="q-mr-xs" />
-        <span>Hide</span>
-      </div>
-    </div>
-    <div class="arrow-symbol">&gt;</div>
   </q-card>
 </template>
 
@@ -111,15 +94,16 @@ const props = defineProps({
 
 const jobData = reactive({
   logo: props.job.logo || demoLogo,
+  title: props.job.title || "No title",
+  job_type: props.job.job_type || "No jtype",
+  location: props.job.location || "No location",
+  salary: props.job.salary || 0,
+  posted: props.job.posted || "1990-08-08",
+
   name: props.job.company.name || "No name",
   hiringStatus: props.job.company.status || "No status",
   companyType: props.job.company.type || [],
-  job_type: props.job.job_type || "No jtype",
   tags: props.job.company.tags || [],
-  title: props.job.title || "No title",
-  location: props.job.location || "No location",
-  salary: props.job.salary || 0,
-  posted: props.job.posted.split("T")[0] || "1990-08-08",
 });
 
 const router = useRouter();
