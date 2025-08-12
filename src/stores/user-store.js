@@ -380,5 +380,25 @@ export const useUserStore = defineStore("user", {
         console.log(err);
       }
     },
+
+    async updateRecruiter(editData) {
+      try {
+        const response = await fetch(`${baseUrl}/edit-profile/recruiter`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ editData }),
+        });
+
+        if (response.ok) {
+          this.company = editData;
+          return { message: "success" };
+        }
+      } catch (err) {
+        console.log(err);
+        return { message: "failed" };
+      }
+    },
   },
 });

@@ -80,10 +80,13 @@ const uploadResume = async () => {
   formData.append("resume", resumeFile.value);
 
   try {
-    const response = await fetch("http://localhost:3000/resume/upload-resume", {
-      method: "POST",
-      body: formData,
-    });
+    const response = await fetch(
+      `http://localhost:3000/resume/upload-resume/${uid}`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
 
     if (!response.ok) throw new Error("Upload failed");
 

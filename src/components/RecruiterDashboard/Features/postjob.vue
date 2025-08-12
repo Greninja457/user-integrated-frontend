@@ -55,6 +55,7 @@
           <q-input
             v-model="form.salary"
             label="Salary"
+            type="number"
             filled
             :rules="[isRequired, isSalaryValid]"
             class="q-mb-md"
@@ -76,12 +77,14 @@
         <div class="form-entry">
           <q-select
             v-model="form.lid"
-            :options="[1]"
+            :options="locationOptions"
             label="Branch Location"
             filled
-            :rules="[]"
+            :rules="[isRequired]"
             emit-value
             map-options
+            :loading="locationsLoading"
+            :disable="locationsLoading"
           />
           <q-select
             v-model="form.skillids"
@@ -93,6 +96,8 @@
             :rules="[isRequired]"
             emit-value
             map-options
+            :loading="skillsLoading"
+            :disable="skillsLoading"
           />
         </div>
 
@@ -117,6 +122,53 @@
             :rules="[minLength(20), isRequired]"
             placeholder="e.g. Full responsibilities, requirements, etc."
             rows="6"
+          />
+        </div>
+
+        <!-- Links Section (Optional) -->
+
+        <div class="section-title">Additional Links (Optional)</div>
+
+        <div class="form-entry">
+          <div
+            v-for="(link, index) in form.links"
+            :key="index"
+            class="link-row"
+          >
+            <q-input
+              v-model="link.label"
+              label="Link Label"
+              filled
+              class="link-label"
+              placeholder="e.g. Company Website"
+            />
+
+            <q-input
+              v-model="link.url"
+              label="URL"
+              filled
+              class="link-url"
+              placeholder="https://example.com"
+              :rules="[isValidUrl]"
+            />
+
+            <q-btn
+              flat
+              round
+              color="negative"
+              icon="delete"
+              @click="removeLink(index)"
+              class="link-remove"
+            />
+          </div>
+
+          <q-btn
+            flat
+            color="primary"
+            icon="add"
+            label="Add Link"
+            @click="addLink"
+            class="q-mt-sm"
           />
         </div>
 
@@ -157,18 +209,38 @@ import { useUserStore } from "src/stores/user-store";
 import JobCardPreview from "src/components/Jobs/ListJobs/JobCard.vue";
 
 const $q = useQuasar();
+const jobsStore = useJobsStore();
+const userStore = useUserStore();
+
+// Base URL for API calls
+const baseUrl = "http://localhost:3000";
 
 const formRef = ref(null);
 const isPreviewing = ref(false);
 const isSubmitting = ref(false);
 
-const skillOptions = computed(() => {
-  return [
-    { label: "CSS", value: 11 },
-    { label: "Python", value: 6 },
-    { label: "React", value: 3 },
-  ];
-});
+// Loading states for dropdowns
+const skillsLoading = ref(false);
+const locationsLoading = ref(false);
+
+// Data arrays
+const skills = ref([]);
+const locations = ref([]);
+
+// Convert skills and locations to select options
+const skillOptions = computed(() =>
+  skills.value.map((skill) => ({
+    label: skill.name,
+    value: skill.id,
+  }))
+);
+
+const locationOptions = computed(() =>
+  locations.value.map((location) => ({
+    label: location.name,
+    value: location.id,
+  }))
+);
 
 const form = ref({
   title: "",
@@ -183,26 +255,95 @@ const form = ref({
   skillids: [],
   bigDescription: "",
   smallDescription: "",
+  links: [],
 });
 
 const previewJob = computed(() => ({
-  title: form.value.title,
-  job_type: form.value.job_type,
-  location: "Banglore",
-  salary: form.value.salary,
+  ...form.value,
   posted: new Date().toISOString().split("T")[0],
-
-  company: {
-    name: form.value.company,
-    status: "Hiring",
-    type: "No type",
-    tags: [],
-  },
 }));
 
 const jobTypes = ["Full-time", "Co-founder", "Contract", "internship"];
 const modeOptions = ["Online", "Offline", "Hybrid"];
 
+// API Functions
+async function getAllSkills() {
+  try {
+    skillsLoading.value = true;
+    const res = await fetch(`${baseUrl}/skills/all`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: Failed to fetch skills`);
+    }
+
+    const data = await res.json();
+    console.log("Skills response:", data);
+
+    // Handle your current skills API format: {success: true, skills: [[id, name], [id, name]]}
+    if (data.success && data.skills && Array.isArray(data.skills)) {
+      skills.value = data.skills.map((skill) => ({
+        id: skill[0], // skillid
+        name: skill[1], // skillName
+      }));
+    } else {
+      throw new Error("Invalid skills data format");
+    }
+  } catch (error) {
+    console.error("Error fetching skills:", error);
+    $q.notify({
+      type: "negative",
+      message: `Failed to load skills: ${error.message}`,
+    });
+    skills.value = []; // Set empty array as fallback
+  } finally {
+    skillsLoading.value = false;
+  }
+}
+
+async function getAllLocations() {
+  try {
+    locationsLoading.value = true;
+    const res = await fetch(`${baseUrl}/location/location`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: Failed to fetch locations`);
+    }
+
+    const data = await res.json();
+    console.log("Locations response:", data);
+
+    // Handle locations API format: {success: true, locations: [[id, name], [id, name]]}
+    if (data.success && data.locations && Array.isArray(data.locations)) {
+      locations.value = data.locations.map((location) => ({
+        id: location[0], // lid
+        name: location[1], // lname
+      }));
+    } else {
+      throw new Error("Invalid locations data format");
+    }
+  } catch (error) {
+    console.error("Error fetching locations:", error);
+    $q.notify({
+      type: "negative",
+      message: `Failed to load locations: ${error.message}`,
+    });
+    locations.value = []; // Set empty array as fallback
+  } finally {
+    locationsLoading.value = false;
+  }
+}
+
+// Validation Rules
 const isRequired = (val) => !!val || "This field is required";
 const minLength = (n) => (val) =>
   !val || val.length >= n || `Minimum ${n} characters`;
@@ -214,19 +355,35 @@ const isPositiveNumber = (val) => {
 };
 
 const isSalaryValid = (val) => {
-  if (!val) return "Salary is required";
-  const salary = val.toUpperCase().replace(/[₹\s]/g, "").trim();
-  const lMatch = salary.match(/^([1-9]\d{0,3})L$/);
-  const kMatch = salary.match(/^([1-9]\d{0,5})K$/);
-  const raw = parseInt(salary);
-  if (lMatch || kMatch) return true;
-  return (
-    (!isNaN(raw) && raw > 1000 && raw < 99990000) ||
-    "Enter a valid salary like ₹5L or ₹800000"
-  );
+  if (!val || val < 1000) return "Salary must be at least ₹1,000";
+  if (val > 99990000) return "Salary seems too high";
+  return true;
 };
 
-onMounted(() => {
+const isValidUrl = (val) => {
+  if (!val) return true; // Optional field
+  try {
+    new URL(val);
+    return true;
+  } catch {
+    return "Please enter a valid URL";
+  }
+};
+
+// Link management
+const addLink = () => {
+  form.value.links.push({ label: "", url: "" });
+};
+
+const removeLink = (index) => {
+  form.value.links.splice(index, 1);
+};
+
+onMounted(async () => {
+  // Load skills and locations from backend
+  await Promise.all([getAllSkills(), getAllLocations()]);
+
+  // Set company data if available
   if (useUserStore().company) {
     form.value.company = useUserStore().company.companyName;
     form.value.cid = useUserStore().company.cid;
@@ -252,8 +409,8 @@ async function submitJob() {
   isSubmitting.value = true;
 
   try {
+    // Backend derives uid and cid from authenticated user, so we don't send them
     const jobData = {
-      uid: useUserStore().uid,
       title: form.value.title,
       bigDescription: form.value.bigDescription,
       smallDescription: form.value.smallDescription,
@@ -264,11 +421,10 @@ async function submitJob() {
       skillids: form.value.skillids,
       equity: form.value.equity || 0,
       lid: form.value.lid,
-      cid: form.value.cid,
-      posted: new Date().toISOString().split("T")[0],
+      links: form.value.links.filter((link) => link.label && link.url),
     };
 
-    const result = await useJobsStore().postJob(jobData);
+    const result = await jobsStore.postJob(jobData);
 
     console.log("Job submission result:", result);
     console.log("Job data being submitted:", jobData);
@@ -300,17 +456,18 @@ async function submitJob() {
 function resetForm() {
   form.value = {
     title: "",
-    company: useUserStore().company.companyName || "",
+    company: useUserStore().company?.companyName || "",
     job_type: "",
     mode_of_work: "",
     exp_required: 0,
     salary: 0,
     equity: 0,
     lid: null,
-    cid: useUserStore().company.cid,
+    cid: useUserStore().company?.cid || null,
     skillids: [],
     bigDescription: "",
     smallDescription: "",
+    links: [],
   };
 
   formRef.value?.resetValidation();

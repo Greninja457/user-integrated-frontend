@@ -28,7 +28,7 @@ const props = defineProps({
 const checkResume = async () => {
   try {
     const res = await fetch(`http://localhost:3000/resume/view-resume/${uid}`, {
-      method: "HEAD",
+      method: "GET",
     });
     resumeExists.value = res.ok;
   } catch {
